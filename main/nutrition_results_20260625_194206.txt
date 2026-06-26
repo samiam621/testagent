@@ -1,0 +1,15 @@
+{
+  "leads": [
+    {
+      "name": "Big Mac",
+      "calories": "540kcal",
+      "protein": "26g",
+      "fat": "28g",
+      "carbohydrates": "46g",
+      "sodium": "984mg",
+      "tools_used": [
+        "search_tool"
+      ]
+    }
+  ]
+}

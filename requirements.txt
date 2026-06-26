@@ -1,0 +1,9 @@
+langchain
+wikipedia
+langchain-community
+langchain-google-genai
+python-dotenv
+pydantic
+beautifulsoup4
+langchain-classic
+ddgs
