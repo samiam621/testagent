@@ -16,10 +16,11 @@ llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
 class leadResponse(BaseModel):
     name: str
-    calories: int
-    protein: int
-    fat: int
-    carbohydrates: int
+    calories: str
+    protein: str
+    fat: str
+    carbohydrates: str
+    sodium: str
     tools_used: list[str]
 
 class leadResponseList(BaseModel):
@@ -29,24 +30,28 @@ parser = PydanticOutputParser(pydantic_object=leadResponseList)
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", 
-     """
-     You are a health assistant.
-            1. Use the 'scrape' tool to find exactly 5 ...
-            2. For each ... identified by the 'scrape' tool, use the 'search' tool to gather detailed information from DuckDuckGo.
-            3. Analyze the searched website content to provide:
-                - name: food name
-                - calories: Any available calorie details
-                - protein: Any available protein details
-                - fat: Any available fat details
-                - carbohydrates: Any available carbohydrates details
-                - tools_used: List tools used        
-
-            Do not include extra text beyond the formatted output and the save confirmation message.
-            4. Return the output as a list of 5 entries in this format: {format_instructions}
-            5. After formatting the list of 5 entries, use the 'save_to_text' tool to send the json format to the text file. 
-            6. If the 'save' tool runs, say that you ran it. If you did not run the 'save' tool, say that you could not run it.
-
-     """),
+    """
+        You are a nutrition lookup assistant. 
+        When given a query about a specific food item, search ONLY for that exact item's nutrition facts.
+        Do NOT search for related or similar items. Answer only what was asked.
+        Use the 'search' tool to gather detailed information from DuckDuckGo.
+        Your final answer MUST be a valid JSON object with this exact structure and nothing else:
+            {{
+            "leads": [
+                {{
+                "name": "food name",
+                "calories": "Xkcal",
+                "protein": "Xg",
+                "fat": "Xg",
+                "carbohydrates": "Xg",
+                "sodium": "Xmg",
+                "tools_used": ["tool1", "tool2"]
+                }}
+            ]
+            }}
+            Do not include any explanation or extra text outside the JSON.
+            After using save_tool, always provide the nutrition facts as your final answer to the user.
+    """),
      ("human","{query}"),
      ("placeholder","{agent_scratchpad}"),
     ]
@@ -77,6 +82,7 @@ raw_response = agent_executor.invoke({"query": query})
 raw_output = raw_response.get('output')
 
 if isinstance(raw_output, list):
+    #bug
     raw_output = ''.join(
         item['text'] if isinstance(item, dict) and item.get('type') == 'text' 
         else str(item)
@@ -86,16 +92,16 @@ if isinstance(raw_output, list):
 #prints agent's response in structured format if parsing is successful, otherwise prints an error message along with the raw response for debugging purposes.
 try:
     structured_response = parser.parse(raw_output)
-    data = structured_response.model_dump() #pydantic v2 uses model_dump() instead of dict() to convert the model to a dictionary
+    data = structured_response.model_dump()
     for lead in data.get('leads', []):
         print(f"""
-        {lead['name']}
-        Calories:      {lead['calories']} kcal
-        Protein:       {lead['protein']}g
-        Fat:           {lead['fat']}g
-        Carbohydrates: {lead['carbohydrates']}g
-        Tools used:    {', '.join(lead['tools_used'])}
-""")
+        "name": "{lead['name']}"
+        "calories": "{lead['calories']}"
+        "protein": "{lead['protein']}"
+        "fat": "{lead['fat']}"
+        "carbohydrates": "{lead['carbohydrates']}"
+        "sodium": "{lead['sodium']}"
+        """)
 except Exception as e:
     print("Error parsing response", e, "Raw Response - ", raw_response)
 

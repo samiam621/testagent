@@ -89,6 +89,7 @@ def save_tool(content: str) -> str:
     Save the structured nutrition data to a timestamped .txt file in JSON format.
     Pass the JSON-formatted string of all nutrition results as the 'content' argument.
     Pretty-prints valid JSON automatically; saves plain text as a fallback.
+    "After using save_tool, always provide the nutrition facts as your final answer to the user."
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"nutrition_results_{timestamp}.txt"
